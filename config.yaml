@@ -1,0 +1,160 @@
+---
+wal:
+  backend: colorz
+  saturate: 0.3
+global:
+  wallpaper_directory: wallpapers
+  valid_formats:
+    - png
+    - jpg
+    - jpeg
+    - gif
+    - tiff
+    - webp
+colors:
+  render:
+    - srcPath: zorinblue-dark
+      destPath: .themes/wal-gnome
+      replace:
+        - type: hex
+          use: color1
+          adjust:
+            - method: brighten
+              amount: 0.6
+          colors:
+            - "#030405"
+            - "#191f22"
+            - "#1c2326"
+            - "#1d2427"
+            - "#20272b"
+            - "#21292d"
+            - "#262e32"
+            - "#293338"
+            - "#2d373c"
+            - "#2f3a3f"
+            - "#323d42"
+            - "#3a474d"
+            - "#3a474e"
+            - "#425158"
+            - "#4a5a63"
+            - "#52646e"
+            - "#5b6e78"
+            - "#5b6f79"
+            - "#6b828e"
+            - "#75caf6"
+            - "#7b96a4"
+            - "#8caaba"
+            - "#8dd4f8"
+            - "#94b4c4"
+            - "#94b4c5"
+            - "#9cbecf"
+            - "#a4c8da"
+            - "#acd2e5"
+            - "#b0d6e9"
+            - "#b5dcf0"
+            - "#bde6fb"
+            - "#edf8fe"
+        - type: rgb
+          use: color1
+          adjust:
+            - method: brighten
+              amount: 0.5
+          colors:
+            - 
+              - 107
+              - 130
+              - 142
+            - 
+              - 123
+              - 150
+              - 164
+            - 
+              - 141
+              - 212
+              - 248
+            - 
+              - 189
+              - 230
+              - 251
+            - 
+              - 189
+              - 230
+              - 251
+            - 
+              - 25
+              - 31
+              - 34
+            - 
+              - 50
+              - 61
+              - 66
+            - 
+              - 50
+              - 61
+              - 66
+            - 
+              - 82
+              - 100
+              - 110
+            - 
+              - 46
+              - 57
+              - 62
+            -
+              - 57
+              - 69
+              - 76
+            - 
+              - 66
+              - 81
+              - 89
+            -
+              - 36
+              - 44
+              - 48
+            -
+              - 162
+              - 241
+              - 255
+            -
+              - 82
+              - 138
+              - 153
+            -
+              - 0
+              - 35
+              - 42
+            - 
+              - 26
+              - 65
+              - 76
+    - srcPath: papirus-icon-theme/Papirus
+      destPath: .icons/wal-icons
+      replace:
+        - type: hex
+          use: color3
+          search:
+            - "**/places"
+          colors:
+            - "#1d344f"
+        - type: hex
+          use: color3
+          adjust:
+            - method: desaturate
+              amount: 1.5
+          search:
+            - "**/places"
+            - "**/panel"
+            - "**/actions"
+          colors:
+            - "#5294e2"
+            - "#4285f4"
+        - type: hex
+          use: color3
+          search:
+            - "**/places"
+          adjust:
+            - method: desaturate
+              amount: 2
+          colors:
+            - "#4877b1"
