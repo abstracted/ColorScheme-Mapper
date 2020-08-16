@@ -7,3 +7,6 @@
 [submodule "papirus-icon-theme"]
 	path = papirus-icon-theme
 	url = https://github.com/PapirusDevelopmentTeam/papirus-icon-theme.git
+[submodule "Nordic"]
+	path = Nordic
+	url = https://github.com/EliverLara/Nordic.git
