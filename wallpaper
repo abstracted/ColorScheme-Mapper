@@ -26,7 +26,7 @@ function getYaml(path) {
 */
 function exec(command) {
   try {
-    return system.execSync(command).toString().replace('node_modules', '').trim()
+    return system.execSync(command).toString().trim()
   } catch (error) {
     return ''
   }
@@ -51,12 +51,11 @@ function getColorschemePath() {
   return `${os.homedir()}/.cache/wal/colors.yml`
 }
 
-function getGrepColorCommand(color, dir, searchPath) {
-  return `grep -rl "${color}" ${dir}/${searchPath}`
-}
 
-function getReplaceColorCommand(colorOld, colorNew, file) {
-  return `sed -i 's/${colorOld}/${colorNew}/g' "${file}"`
+function getFilesWithString(srcPath, searchPath, string) {
+  const command = `find "${__dirname}/${srcPath}" -type d -iwholename "${searchPath}" -exec rg -l "${string}" {} \\;`
+  const files = exec(command)
+  return files ? files.split('\n') : [ ]
 }
 
 function getColorStringFromType(color, type) {
@@ -104,7 +103,8 @@ function getImageInteractive(config) {
   const dir = getWallpapersDirectory(config)
   const interactivePick = `${dir}/._interactive`
   // Launches an interactive terminal to pick the wallaper
-  exec(`$TERMINAL ranger ${dir} --choosefile=${interactivePick}`)
+  exec(`touch ${interactivePick}`)
+  exec(`kitty ranger ${dir} --choosefile=${interactivePick}`)
   // Grabs the path to the picked image by the previous command
   const pickedWallpaper = fs.readFileSync(interactivePick, 'utf8')
 
@@ -125,118 +125,144 @@ function getColorScheme(wallpaperPath, config) {
 }
 
 function getTemplateRenderData(colorScheme, config) {
-  const oldData = JSON.stringify(config.colors.render)
-  const newData = JSON.parse(oldData).map(renderItem => {
+  const oldData = config.colors.render
+  
+  const newData = oldData.map((renderItem) => {
+    if (!renderItem.replace) {
+      // TODO: useful warning messages should be shown here
+      return renderItem
+    }
+
+    const { srcPath, destPath } = renderItem
+
     const replace = renderItem.replace.map(replaceItem => {
-      const { adjust, colors, type, use } = replaceItem
+      const { adjust, colors, type, use, search } = replaceItem
+      const searchPaths = search ? search : ['']
+  
+      if (!type) {
+        // TODO: useful warning messages should be shown here
+        return replaceItem
+      }
+    
+      if (!colors) {
+        // TODO: useful warning messages should be shown here
+        return replaceItem
+      }
+
       const colorPrimary = colorScheme.colors[`${use}`]
       const colorsNew = getMappedColorList(colorPrimary, type, colors, adjust)
+  
+      return searchPaths.map(searchPath => {
 
-      return { ...replaceItem, colorsNew, colorPrimary }
+        return colors.map((color, index) => {
+
+          const colorOld = getColorStringFromType(color, type)          
+          const colorNew = getColorStringFromType(colorsNew[index], type)
+
+          const files = getFilesWithString(srcPath, searchPath, colorOld)
+
+          return files.map(file => {
+            const srcPathRegex = new RegExp(`.*${srcPath}/`)
+            const fileDest = file.replace(srcPathRegex, `${os.homedir()}/${destPath}/`)
+
+            return {
+              colorOld,
+              colorNew,
+              file: fileDest
+            }
+          })
+        })
+      })
     })
+    .flat(Infinity)
+    .sort((a, b) => {
+      if (a.file < b.file) return -1
+      if (a.file > b.file) return 1
+      return 0
+    })
+    .reduce((acc, cur, index) => {
+      const { file, colorOld, colorNew } = cur
+      const colors = [colorOld, colorNew]
 
-    return { ...renderItem, replace }
+      if (index > 0) {
+        const fileIndex = acc.findIndex(item => item.file === file)
+
+        if (fileIndex !== -1) {
+          acc[fileIndex].colors.push(colors)
+        } else {
+          acc.push({ file, colors: [colors] })
+        }
+
+        return acc
+      } else {
+        return [{ file, colors: [colors] }]
+      }
+    }, [])
+
+    return { srcPath, destPath, replace }
   })
 
   return newData
+}
+
+function getIsValidFormat(wallpaperPath, config) {
+  const validFormats = config.global.valid_formats
+  return validFormats.filter(format => {
+    return wallpaperPath.includes(format)
+  }).length > 0
 }
 
 // PROGRAM SETTERS
 
 async function setTemplates(templateRenderData) {
   return new Promise((resolve, reject) => {
-    const replacements = templateRenderData.map((renderItem) => {
-      const { srcPath, destPath } = renderItem
+    const replacementsPromises = templateRenderData.filter(({ srcPath, destPath, replace }) => {
+      // Copy files to destination
       const src = `${__dirname}/${srcPath}`
       const dest = `${os.homedir()}/${destPath}`
-
+      
       log('gray', `Copying template from ${src} to ${dest}`)
       exec(`mkdir -p ${dest}`)
       exec(`cp -rf ${src}/* ${dest}`)
 
-      log('gray', `Finding colors to replace in ${dest}`)
-      return renderItem.replace.map(replaceItem => {
-        const { type, colors, colorsNew, search } = replaceItem
-        const searchPaths = search ? search : ['']
-
-        return searchPaths.map(searchPath => {
-          return colors.map((color, index) => {
-            const colorOld = getColorStringFromType(color, type)
-            const colorNew = getColorStringFromType(colorsNew[index], type)
-            const grepColorCommand = getGrepColorCommand(colorOld, dest, searchPath)
-
-            const found = exec(grepColorCommand)
-            const files = found ? found.split('\n') : []
-
-            return files.map(file => {
-              return {
-                colorOld,
-                colorNew,
-                file
-              }
+      // Filter out templates with no replace directives
+      return Array.isArray(replace)
+    }).map(({ replace }) => {
+      // Replace old colors with new colors in template files
+      return replace.map(item => {
+        return new Promise((res, rej) => {
+          const { file, colors } = item
+  
+          fs.readFile(file, 'utf8', (err, data) => {
+            if (err) {
+              log('red', err)
+            }
+  
+            const result = colors.reduce((acc, color) => {
+              return acc.replace(new RegExp(color[0], 'gm'), color[1])
+            }, data)
+  
+            writeFilePromise(file, result, 'utf8')
+            .then(() => {
+              res()
+            })
+            .catch((error) => {
+              rej(error)
             })
           })
         })
       })
-      .flat(Infinity)
-      .sort((a, b) => {
-        if (a.file < b.file) return -1
-        if (a.file > b.file) return 1
-        return 0
-      })
-      .reduce((acc, cur, index) => {
-        const { file, colorOld, colorNew } = cur
-        const colors = [colorOld, colorNew]
-
-        if (index > 0) {
-          const fileIndex = acc.findIndex(item => item.file === file)
-
-          if (fileIndex !== -1) {
-            acc[fileIndex].colors.push(colors)
-          } else {
-            acc.push({ file, colors: [colors] })
-          }
-
-          return acc
-        } else {
-          return [{ file, colors: [colors] }]
-        }
-      }, [])
     }).flat(Infinity)
 
     log('gray', `Rendering template files`)
-    const replacementsPromises = replacements.map(item => {
-      return new Promise((res, rej) => {
-        const { file, colors } = item
 
-        fs.readFile(file, 'utf8', (err, data) => {
-          if (err) {
-            log('red', err)
-          }
-
-          const result = colors.reduce((acc, color) => {
-            return acc.replace(new RegExp(color[0], 'gm'), color[1])
-          }, data)
-
-          writeFilePromise(file, result, 'utf8')
-          .then(() => {
-            res()
-          })
-          .catch((error) => {
-            rej(error)
-          })
-        })
-      })
-    })
-
-    Promise.all(replacementsPromises)
-    .then(() => {
+    Promise.all(replacementsPromises).then(() => {
       resolve()
-    })
-    .catch(error => {
+    }).catch(error => {
       reject(error)
     })
   })
+
 }
 
 function setGnome(wallpaperPath) {
@@ -326,22 +352,20 @@ async function main() {
     process.exit()
   }
 
-  const validFormats = config.global.valid_formats
-  const isValidFormat = validFormats.filter(format => {
-    return wallpaperPath.includes(format)
-  }).length > 0
+  const isValidFormat = getIsValidFormat(wallpaperPath, config)
 
   if (!isValidFormat) {
     log('red', 'Your wallpaper did not match the list of valid formats')
-    log('red', `Valid formats are ${validFormats.join()}`)
+    process.exit()
   }
-
 
   const colorScheme = getColorScheme(wallpaperPath, config)
   const templateRenderData = getTemplateRenderData(colorScheme, config)
+
   await setTemplates(templateRenderData)
-  setGnome(wallpaperPath)
-  setSpotify()
+
+  // setGnome(wallpaperPath)
+  // setSpotify()
 }
 
 try {
