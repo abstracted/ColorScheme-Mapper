@@ -28,6 +28,7 @@ function exec(command) {
   try {
     return system.execSync(command).toString().trim()
   } catch (error) {
+    log('red', error)
     return ''
   }
 }
@@ -53,9 +54,13 @@ function getColorschemePath() {
 
 
 function getFilesWithString(srcPath, searchPath, string) {
-  const command = `find "${__dirname}/${srcPath}" -type d -iwholename "${searchPath}" -exec rg -l "${string}" {} \\;`
+  const findCommandBase = `find "${__dirname}/${srcPath}"`
+  const findCommandSearch = searchPath ? `-type d -iwholename "${searchPath}"` : '-type f'
+  const findCommandExec = `-exec rg -l "${string}" {} \\;`
+  const command = `${findCommandBase} ${findCommandSearch} ${findCommandExec}`
+
   const files = exec(command)
-  return files ? files.split('\n') : [ ]
+  return files ? files.split('\n') : []
 }
 
 function getColorStringFromType(color, type) {
@@ -103,6 +108,7 @@ function getImageInteractive(config) {
   const dir = getWallpapersDirectory(config)
   const interactivePick = `${dir}/._interactive`
   // Launches an interactive terminal to pick the wallaper
+  exec(`mkdir -p ${dir}`)
   exec(`touch ${interactivePick}`)
   exec(`kitty ranger ${dir} --choosefile=${interactivePick}`)
   // Grabs the path to the picked image by the previous command
@@ -126,7 +132,7 @@ function getColorScheme(wallpaperPath, config) {
 
 function getTemplateRenderData(colorScheme, config) {
   const oldData = config.colors.render
-  
+
   const newData = oldData.map((renderItem) => {
     if (!renderItem.replace) {
       // TODO: useful warning messages should be shown here
@@ -138,12 +144,12 @@ function getTemplateRenderData(colorScheme, config) {
     const replace = renderItem.replace.map(replaceItem => {
       const { adjust, colors, type, use, search } = replaceItem
       const searchPaths = search ? search : ['']
-  
+
       if (!type) {
         // TODO: useful warning messages should be shown here
         return replaceItem
       }
-    
+
       if (!colors) {
         // TODO: useful warning messages should be shown here
         return replaceItem
@@ -151,18 +157,18 @@ function getTemplateRenderData(colorScheme, config) {
 
       const colorPrimary = colorScheme.colors[`${use}`]
       const colorsNew = getMappedColorList(colorPrimary, type, colors, adjust)
-  
+
       return searchPaths.map(searchPath => {
 
         return colors.map((color, index) => {
 
-          const colorOld = getColorStringFromType(color, type)          
+          const colorOld = getColorStringFromType(color, type)
           const colorNew = getColorStringFromType(colorsNew[index], type)
 
           const files = getFilesWithString(srcPath, searchPath, colorOld)
 
           return files.map(file => {
-            const srcPathRegex = new RegExp(`.*${srcPath}/`)
+            const srcPathRegex = new RegExp(`${__dirname}/${srcPath}`)
             const fileDest = file.replace(srcPathRegex, `${os.homedir()}/${destPath}/`)
 
             return {
@@ -174,30 +180,30 @@ function getTemplateRenderData(colorScheme, config) {
         })
       })
     })
-    .flat(Infinity)
-    .sort((a, b) => {
-      if (a.file < b.file) return -1
-      if (a.file > b.file) return 1
-      return 0
-    })
-    .reduce((acc, cur, index) => {
-      const { file, colorOld, colorNew } = cur
-      const colors = [colorOld, colorNew]
+      .flat(Infinity)
+      .sort((a, b) => {
+        if (a.file < b.file) return -1
+        if (a.file > b.file) return 1
+        return 0
+      })
+      .reduce((acc, cur, index) => {
+        const { file, colorOld, colorNew } = cur
+        const colors = [colorOld, colorNew]
 
-      if (index > 0) {
-        const fileIndex = acc.findIndex(item => item.file === file)
+        if (index > 0) {
+          const fileIndex = acc.findIndex(item => item.file === file)
 
-        if (fileIndex !== -1) {
-          acc[fileIndex].colors.push(colors)
+          if (fileIndex !== -1) {
+            acc[fileIndex].colors.push(colors)
+          } else {
+            acc.push({ file, colors: [colors] })
+          }
+
+          return acc
         } else {
-          acc.push({ file, colors: [colors] })
+          return [{ file, colors: [colors] }]
         }
-
-        return acc
-      } else {
-        return [{ file, colors: [colors] }]
-      }
-    }, [])
+      }, [])
 
     return { srcPath, destPath, replace }
   })
@@ -220,7 +226,7 @@ async function setTemplates(templateRenderData) {
       // Copy files to destination
       const src = `${__dirname}/${srcPath}`
       const dest = `${os.homedir()}/${destPath}`
-      
+
       log('gray', `Copying template from ${src} to ${dest}`)
       exec(`mkdir -p ${dest}`)
       exec(`cp -rf ${src}/* ${dest}`)
@@ -232,24 +238,25 @@ async function setTemplates(templateRenderData) {
       return replace.map(item => {
         return new Promise((res, rej) => {
           const { file, colors } = item
-  
+
           fs.readFile(file, 'utf8', (err, data) => {
             if (err) {
               log('red', err)
             }
-  
+
             const result = colors.reduce((acc, color) => {
               return acc.replace(new RegExp(color[0], 'gm'), color[1])
             }, data)
-  
+
             writeFilePromise(file, result, 'utf8')
-            .then(() => {
-              res()
-            })
-            .catch((error) => {
-              rej(error)
-            })
+              .then(() => {
+                res()
+              })
+              .catch((error) => {
+                rej(error)
+              })
           })
+
         })
       })
     }).flat(Infinity)
@@ -265,44 +272,93 @@ async function setTemplates(templateRenderData) {
 
 }
 
-function setGnome(wallpaperPath) {
+function setPostSetup(wallpaperPath, config) {
+  const {
+    custom_commands,
+    gnome_wallpaper,
+    gnome_icons,
+    gnome_theme,
+    gnome_shell,
+    spotify,
+  } = config.global.post_setup;
+
+  if (Array.isArray(custom_commands)) {
+    log('green', 'Running post setup commands.')
+    custom_commands.forEach(command => {
+      log('gray', `Running: ${command}`)
+      const result = exec(command)
+      log('gray', `Result: ${result}`)
+    })
+  }
+
+  if (gnome_wallpaper) {
+    setGnomeWallpaper(wallpaperPath)
+  }
+
+  if (gnome_icons) {
+    setGnomeIcons(gnome_icons)
+  }
+
+  if (gnome_theme) {
+    setGnomeTheme(gnome_theme)
+  }
+
+  if (gnome_shell) {
+    setGnomeShell()
+  }
+
+  if (spotify) {
+    setSpotify()
+  }
+}
+
+function setGnomeShell() {
+  log('green', `Reloading Shell Theme`)
+  exec(`gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval 'Main.loadTheme();'`)
+}
+
+function setGnomeWallpaper(wallpaperPath) {
   log('green', `Setting wallpaper to ${wallpaperPath}`)
   exec(`gsettings set org.gnome.desktop.background picture-uri "file://${wallpaperPath}"`)
   exec(`gsettings set org.gnome.desktop.screensaver picture-uri "file://${wallpaperPath}"`)
+}
 
-  
+function setGnomeIcons(iconsPath) {
+  log('green', `Reloading GTK icons`)
+  const iconsFullPath = `${os.homedir()}/${iconsPath}`
+  const iconsFullPathTemp = `${iconsFullPath}__`
+  const iconsName = iconsPath.split('/').pop()
+  const iconsNameTemp = `${iconsName}__`
+
+  exec(`mkdir -p ${iconsFullPathTemp}`)
+  exec(`cp ${iconsFullPath}/index.theme ${iconsFullPathTemp}`)
+
+  exec(`gsettings set org.gnome.desktop.interface icon-theme ${iconsNameTemp}`)
+  exec(`sleep 1`)
+  exec(`gsettings set org.gnome.desktop.interface icon-theme ${iconsName}`)
+
+  exec(`rm -rfv ${iconsFullPathTemp}`)
+}
+
+function setGnomeTheme(themePath) {
   log('green', `Reloading GTK Theme`)
-  const themeDelim = '____'
-  const themeSuffix = getRandomNumber(12)
 
-  const gtkTheme = exec(`gsettings get org.gnome.desktop.interface gtk-theme | cut -d\\' -f2`)
-  const gtkThemeFixed = gtkTheme.replace(/_+\d+$/, '')
-  const gtkThemeNew =  gtkThemeFixed + themeDelim + themeSuffix
+  const themeFullPath = `${os.homedir()}/${themePath}`
+  const themeFullPathTemp = `${themeFullPath}__`
+  const themeName = themePath.split('/').pop()
+  const themeNameTemp = `${themeName}__`
 
-  exec(`find ~/.themes/ -iname "*${themeDelim}*" -exec rm {} \\;`)
-  exec(`ln -sf ~/.themes/${gtkThemeFixed} ~/.themes/${gtkThemeNew}`)
+  exec(`mkdir -p ${themeFullPathTemp}`)
+  exec(`cp ${themeFullPath}/index.theme ${themeFullPathTemp}`)
 
-  exec(`gsettings set org.gnome.desktop.interface gtk-theme ${gtkThemeFixed}`)
+  exec(`gsettings set org.gnome.desktop.interface gtk-theme ${themeNameTemp}`)
   exec(`sleep 1`)
-  exec(`gsettings set org.gnome.desktop.interface gtk-theme ${gtkThemeNew}`)
+  exec(`gsettings set org.gnome.desktop.interface gtk-theme ${themeName}`)
 
-  
-  log('green', `Reloading Icon Theme`)
-  const iconTheme = exec(`gsettings get org.gnome.desktop.interface icon-theme | cut -d\\' -f2`)
-  const iconThemeFixed = iconTheme.replace(/_+\d+$/, '')
-  const iconThemeNew = iconThemeFixed + themeDelim + themeSuffix
+  exec(`rm -rfv ${themeFullPathTemp}`)
+}
 
-  exec(`find ~/.icons/ -iname "*${themeDelim}*" -exec rm {} \\;`)
-  exec(`ln -sf ~/.icons/${iconThemeFixed} ~/.icons/${iconThemeNew}`)
-
-  exec(`gsettings set org.gnome.desktop.interface icon-theme ${iconThemeFixed}`)
-  exec(`sleep 1`)
-  exec(`gsettings set org.gnome.desktop.interface icon-theme ${iconThemeNew}`)
-
-  
-  log('green', `Reloading Shell Theme`)
-  exec(`gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval 'Main.loadTheme();'`)
-
+function setGnomeGDM() {
   // TODO: this borks gdm, fix before using
   // log('green', `Reloading Login Theme`)
   // const gnomeShellPath = `${os.homedir()}/.themes/${gtkThemeFixed}/gnome-shell`
@@ -364,8 +420,7 @@ async function main() {
 
   await setTemplates(templateRenderData)
 
-  // setGnome(wallpaperPath)
-  // setSpotify()
+  setPostSetup(wallpaperPath, config)
 }
 
 try {
