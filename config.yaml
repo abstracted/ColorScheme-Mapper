@@ -12,17 +12,25 @@ global:
     - tiff
     - webp
   post_setup:
-    gnome_wallpaper: true
-    gnome_icons: .icons/wal-papirus
-    gnome_theme: .themes/wal-nordic
-    gnome_shell: true
-    spotify: false
+    gnome_wallpaper: 
+      enabled: true
+    gnome_icons: 
+      enabled: true
+      path: .icons/wal-papirus
+    gnome_theme: 
+      enabled: true
+      path: .themes/wal-nordic
+    gnome_shell: 
+      enabled: true
+    spotify: 
+      enabled: true
+      application_path: /opt/spotify
+      theme-name: wal-nordic
     custom_commands:
       - cd ~/.themes/wal-nordic && npm i
       - cd ~/.themes/wal-nordic && ./node_modules/gulp/bin/gulp.js styles
       - cd ~/.themes/wal-nordic && ./node_modules/gulp/bin/gulp.js shell-style
 
-      # - cd ~/.themes/wal-nordic && rm -rfv ./assets/*.png
       - cd ~/.themes/wal-nordic/src && sed -i 's/%s -i %s -e %s/file-open:%s; export-id:%s; export-filename:%s; export-do; file-close; quit/g' render-gtk3-assets.py
       - cd ~/.themes/wal-nordic/src && sed -i 's/--export-dpi=180 %s -i %s -e %s/file-open:%s; export-dpi:180; export-id:%s; export-filename:%s; export-do; file-close; quit/g' render-gtk3-assets-hidpi.py
       - cd ~/.themes/wal-nordic/src && sed -i 's/%s -i %s -e %s/file-open:%s; export-id:%s; export-filename:%s; export-do; file-close; quit/g' render-wm-assets.py
@@ -99,3 +107,18 @@ colors:
               amount: 2
           colors:
             - "#4877b1"
+    - srcPath: spicetify-themes/Nord
+      destPath: .config/spicetify/Themes/wal-nordic
+      replace:
+        - type: hex
+          use: color3
+          colors:
+            - "2E3440"
+            - "3B4252"
+            - "434C5E"
+            - "434C5E"
+            - "4C566A"
+            - "5E81AC"
+            - "81A1C1"
+            - "D8DEE9"
+            - "E5E9F0"

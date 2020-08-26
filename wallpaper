@@ -291,24 +291,24 @@ function setPostSetup(wallpaperPath, config) {
     })
   }
 
-  if (gnome_wallpaper) {
+  if (gnome_wallpaper && gnome_wallpaper.enabled) {
     setGnomeWallpaper(wallpaperPath)
   }
 
-  if (gnome_icons) {
-    setGnomeIcons(gnome_icons)
+  if (gnome_icons && gnome_icons.enabled) {
+    setGnomeIcons(gnome_icons.path)
   }
 
-  if (gnome_theme) {
-    setGnomeTheme(gnome_theme)
+  if (gnome_theme && gnome_theme.enabled) {
+    setGnomeTheme(gnome_theme.path)
   }
 
-  if (gnome_shell) {
+  if (gnome_shell && gnome_shell.enabled) {
     setGnomeShell()
   }
 
-  if (spotify) {
-    setSpotify()
+  if (spotify && spotify.enabled) {
+    setSpotify(spotify)
   }
 }
 
@@ -385,9 +385,12 @@ function setGnomeGDM() {
   // exec(`sudo cp -sf ${gResourcesXMLPath.replace(/.xml$/, '')} /usr/share/gnome-shell/gnome-shell-theme.gresource`)
 }
 
-function setSpotify() {
+function setSpotify(spotify) {
   log('green', `Reloading Spotify Theme`)
-  exec(`${__dirname}/oomoxify/oomoxify.sh ~/.cache/wal/colors-oomox`)
+  const username = os.userInfo().username
+  exec(`sudo chown -Rv ${username}.${username} ${spotify.application_path}`)
+  exec(`spicetify restore -n`)
+  exec(`spicetify backup apply -n`)
 }
 
 // PROGRAM BODY
