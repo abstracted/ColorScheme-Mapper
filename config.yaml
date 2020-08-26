@@ -11,127 +11,66 @@ global:
     - gif
     - tiff
     - webp
+  post_setup:
+    gnome_wallpaper: true
+    gnome_icons: .icons/wal-papirus
+    gnome_theme: .themes/wal-nordic
+    gnome_shell: true
+    spotify: false
+    custom_commands:
+      - cd ~/.themes/wal-nordic && npm i
+      - cd ~/.themes/wal-nordic && ./node_modules/gulp/bin/gulp.js styles
+      - cd ~/.themes/wal-nordic && ./node_modules/gulp/bin/gulp.js shell-style
+
+      # - cd ~/.themes/wal-nordic && rm -rfv ./assets/*.png
+      - cd ~/.themes/wal-nordic/src && sed -i 's/%s -i %s -e %s/file-open:%s; export-id:%s; export-filename:%s; export-do; file-close; quit/g' render-gtk3-assets.py
+      - cd ~/.themes/wal-nordic/src && sed -i 's/--export-dpi=180 %s -i %s -e %s/file-open:%s; export-dpi:180; export-id:%s; export-filename:%s; export-do; file-close; quit/g' render-gtk3-assets-hidpi.py
+      - cd ~/.themes/wal-nordic/src && sed -i 's/%s -i %s -e %s/file-open:%s; export-id:%s; export-filename:%s; export-do; file-close; quit/g' render-wm-assets.py
+      - cd ~/.themes/wal-nordic/src && sed -i 's/--export-dpi=180 %s -i %s -e %s/file-open:%s; export-dpi:180; export-id:%s; export-filename:%s; export-do; file-close; quit/g' render-wm-assets-hidpi.py
+      
+      - cd ~/.themes/wal-nordic/src && ./render-gtk3-assets.py
+      - cd ~/.themes/wal-nordic/src && ./render-gtk3-assets-hidpi.py 
+      - cd ~/.themes/wal-nordic/src && ./render-wm-assets.py
+      - cd ~/.themes/wal-nordic/src && ./render-wm-assets-hidpi.py 
 colors:
   render:
-    # - srcPath: zorinblue-dark
-    #   destPath: .themes/wal-gnome
-    #   replace:
-    #     - type: hex
-    #       use: color1
-    #       adjust:
-    #         - method: brighten
-    #           amount: 0.6
-    #       colors:
-    #         - "#030405"
-    #         - "#191f22"
-    #         - "#1c2326"
-    #         - "#1d2427"
-    #         - "#20272b"
-    #         - "#21292d"
-    #         - "#262e32"
-    #         - "#293338"
-    #         - "#2d373c"
-    #         - "#2f3a3f"
-    #         - "#323d42"
-    #         - "#3a474d"
-    #         - "#3a474e"
-    #         - "#425158"
-    #         - "#4a5a63"
-    #         - "#52646e"
-    #         - "#5b6e78"
-    #         - "#5b6f79"
-    #         - "#6b828e"
-    #         - "#75caf6"
-    #         - "#7b96a4"
-    #         - "#8caaba"
-    #         - "#8dd4f8"
-    #         - "#94b4c4"
-    #         - "#94b4c5"
-    #         - "#9cbecf"
-    #         - "#a4c8da"
-    #         - "#acd2e5"
-    #         - "#b0d6e9"
-    #         - "#b5dcf0"
-    #         - "#bde6fb"
-    #         - "#edf8fe"
-    #     - type: rgb
-    #       use: color1
-    #       adjust:
-    #         - method: brighten
-    #           amount: 0.5
-    #       colors:
-    #         - 
-    #           - 107
-    #           - 130
-    #           - 142
-    #         - 
-    #           - 123
-    #           - 150
-    #           - 164
-    #         - 
-    #           - 141
-    #           - 212
-    #           - 248
-    #         - 
-    #           - 189
-    #           - 230
-    #           - 251
-    #         - 
-    #           - 189
-    #           - 230
-    #           - 251
-    #         - 
-    #           - 25
-    #           - 31
-    #           - 34
-    #         - 
-    #           - 50
-    #           - 61
-    #           - 66
-    #         - 
-    #           - 50
-    #           - 61
-    #           - 66
-    #         - 
-    #           - 82
-    #           - 100
-    #           - 110
-    #         - 
-    #           - 46
-    #           - 57
-    #           - 62
-    #         -
-    #           - 57
-    #           - 69
-    #           - 76
-    #         - 
-    #           - 66
-    #           - 81
-    #           - 89
-    #         -
-    #           - 36
-    #           - 44
-    #           - 48
-    #         -
-    #           - 162
-    #           - 241
-    #           - 255
-    #         -
-    #           - 82
-    #           - 138
-    #           - 153
-    #         -
-    #           - 0
-    #           - 35
-    #           - 42
-    #         - 
-    #           - 26
-    #           - 65
-    #           - 76
+    - srcPath: Nordic
+      destPath: .themes/wal-nordic
+      replace:
+        - type: hex
+          use: color6
+          search:
+            - "**/gtk-3.0"
+            - "**/gtk-2.0"
+            - "**/gnome-shell"
+            - "**/src/gtk3"
+          colors:
+            - "#2e3440"
+            - "#3b4252"
+            - "#434c5e"
+            - "#4c566a"
+            - "#d8dee9"
+            - "#e5e9f0"
+            - "#eceff4"
+            - "#8fbcbb"
+            - "#88c0d0"
+            - "#81a1c1"
+            - "#5e81ac"
+            - "#bf616a"
+            - "#d08770"
+            - "#ebcb8b"
+            - "#a3be8c"
+            - "#b48ead"
+            # assets
+            - "#3b4252"
+            - "#373b43"
+            - "#232831"
+            # light text
+            - "#98abb2"
     - srcPath: papirus-icon-theme/Papirus-Dark
-      destPath: .icons/Papirus-Dark
+      destPath: .icons/wal-papirus
     - srcPath: papirus-icon-theme/Papirus
-      destPath: .icons/wal-icons
+      destPath: .icons/Papirus
       replace:
         - type: hex
           use: color3
@@ -143,7 +82,7 @@ colors:
           use: color3
           adjust:
             - method: desaturate
-              amount: 1.5
+              amount: 2
           search:
             - "**/places"
             - "**/panel"
