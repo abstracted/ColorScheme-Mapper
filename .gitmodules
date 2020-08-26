@@ -10,3 +10,6 @@
 [submodule "Nordic"]
 	path = Nordic
 	url = https://github.com/EliverLara/Nordic.git
+[submodule "spicetify-themes"]
+	path = spicetify-themes
+	url = https://github.com/abstracted/spicetify-themes
