@@ -386,11 +386,7 @@ function setGnomeGDM() {
 }
 
 function setSpotify(spotify) {
-  log('green', `Reloading Spotify Theme`)
-  const username = os.userInfo().username
-  exec(`sudo chown -Rv ${username}.${username} ${spotify.application_path}`)
-  exec(`spicetify restore -n`)
-  exec(`spicetify backup apply -n`)
+  // TODO: Spotify Functionality Not Implemented.
 }
 
 // PROGRAM BODY

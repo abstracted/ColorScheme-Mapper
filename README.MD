@@ -8,4 +8,3 @@
 - colorz (color scheme generator - optional backend for pywal)
 - gnu find - (file finder - filtering search paths for ripgrep)
 - ripgrep - (file content search - finding colors to replace)
-- spicetify-cli - (colors for spotify - optional)

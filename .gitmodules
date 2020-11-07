@@ -1,3 +1,6 @@
 [submodule "papirus-icon-theme"]
 	path = papirus-icon-theme
 	url = https://github.com/PapirusDevelopmentTeam/papirus-icon-theme.git
+[submodule "zorin-desktop-themes"]
+	path = zorin-desktop-themes
+	url = https://github.com/ZorinOS/zorin-desktop-themes.git
