@@ -1,7 +1,7 @@
 ---
 wal:
-  backend: colorz
-  saturate: 0.3
+  backend: wal
+  saturate: 0.2
 global:
   wallpaper_directory: wallpapers
   valid_formats:
@@ -72,9 +72,9 @@ colors:
           use: color3
           adjust:
             - method: brighten
-              amount: 0.55
+              amount: 0.75
             - method: desaturate
-              amount: 0.2
+              amount: 0.05
           colors:
             - "#030405"
             - "#191f22"
@@ -114,7 +114,7 @@ colors:
             - method: brighten
               amount: 0.5
             - method: desaturate
-              amount: 0.1
+              amount: 0.2
           colors:
             - 
               - 107
